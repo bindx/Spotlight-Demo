@@ -4,7 +4,7 @@
 
 在iOS 9中苹果推出了新的Search API,可以搜索应用内的一些数据了,Spotlight 和 Safari 可以直接搜App内的内容(in-App Search)，这样用户更容易找到他们想要的内容，哪怕这个内容是在某个 App 内部的，从而大大提高 App 的使用度和曝光度。
 
- Apple在WWDC公布关于用户习惯的数据，用户有 86% 的时间花在 App 中，仅有 14% 的时间花在 Web 上。所以提高 App 的曝光度和使用度可以大大的提高用户的粘度。
+ 在WWDC公布关于用户习惯的数据，用户有 86% 的时间花在 App 中，仅有 14% 的时间花在 Web 上。所以提高 App 的曝光度和使用度可以大大的提高用户的粘度。
 从目前公布的内容上看，他们公布了几个实现这个功能的 API，比如 “Core Spotlight”，“NSUserActivity”，”Web markup”。下面我们就来简单的了解一下这些新的Api.
 
 #iOS 9 Search API概述
@@ -21,7 +21,14 @@
 为App添加Spotlight支持
 
 ###注:Spotlight只支持iOS 9+如果你的项目支持iOS 9以下版本需要添加如下方法判断
-<script src="https://gist.github.com/bindx/e2e24930095677d56a9f948264afbd41.js"></script>
+```objc
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 90000
+
+//code...
+
+#endif
+```
+
 
 ####第一步:导入Framework
 
@@ -29,13 +36,48 @@
 >CoreSpotlight.framework
 
 ####第二步:导入头文件
-<script src="https://gist.github.com/bindx/11dc4cc10c6d3305fd1be891fe04705e.js"></script>
+
+```objc
+#import <CoreSpotlight/CoreSpotlight.h>
+#import <MobileCoreServices/MobileCoreServices.h>
+```
 
 ####第三步:创建Spotlight索引
 
 >新建了一个Demo工程做例子演示,最后会提供Demo下载地址
 
-<script src="https://gist.github.com/bindx/ab43e19e56802159902bd35a77e7b8b7.js"></script>
+```objc
+-(IBAction)creatSearchableItem{
+      CSSearchableItemAttributeSet *attributeSet = [[CSSearchableItemAttributeSet alloc] initWithItemContentType:(NSString *)kUTTypeImage];
+
+    // 标题
+   attributeSet.title = @"标题";
+
+    // 关键字,NSArray可设置多个
+    attributeSet.keywords = @[@"demo",@"sp"];
+
+    // 描述
+   attributeSet.contentDescription = @"description";
+
+    // 图标, NSData格式
+    attributeSet.thumbnailData = UIImagePNGRepresentation([UIImage imageNamed:@"icon"]);
+
+    // Searchable item
+   CSSearchableItem *item = [[CSSearchableItem alloc] initWithUniqueIdentifier:@"1" domainIdentifier:@"linkedme.cc" attributeSet:attributeSet];
+
+    NSMutableArray *searchItems = [NSMutableArray arrayWithObjects:item, nil];
+    //indexSearchableItems 接收参数NSMutableArray
+   [[CSSearchableIndex defaultSearchableIndex] indexSearchableItems:searchItems completionHandler:^(NSError * error) {
+        if (error) {
+           NSLog(@"索引创建失败:%@",error.localizedDescription);
+        }else{
+            [self performSelectorOnMainThread:@selector(showAlert:) withObject:@"索引创建成功" waitUntilDone:NO];
+
+        }
+    }];
+}
+
+```
 
 ```
 CSSearchableItemAttributeSet设置Spotlight搜索内容的类,我们可以设置各种属性如下图
@@ -44,7 +86,12 @@ CSSearchableItemAttributeSet设置Spotlight搜索内容的类,我们可以设置
 
 方法声明
 
-<script src="https://gist.github.com/bindx/af7c137210bcaca80d9be44cfe3ef25e.js"></script>
+```objc
+- (instancetype)initWithUniqueIdentifier:(NSString *)uniqueIdentifier 
+                        domainIdentifier:(NSString *)domainIdentifier 
+                            attributeSet:(CSSearchableItemAttributeSet *)attributeSet;
+
+```
 
 参数详解
 
@@ -59,17 +106,62 @@ attributeSet|一组详细数据,指定数据源要显示搜索结果.
 通过上面的操作我们已经可以在Spotlight中搜索到我们创建的索引内容了,可以搜索到了下一步就是怎么通过搜索内容打开相应的页面.
 
 通过搜索结果跳转到相应页面
-<script src="https://gist.github.com/bindx/a4de547edd01691e5f337ff85fe47fd7.js"></script>
+
+```objc
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray * _Nullable))restorationHandler{
+
+      NSString* idetifier = userActivity.userInfo[@"kCSSearchableItemActivityIdentifier"];        //获取传入的索引数据的唯一标识
+   if ([idetifier isEqualToString:@"1"]) {
+       DemoOneViewController * ovc = [[DemoOneViewController alloc]init];
+        UINavigationController *navigationController = (UINavigationController *)self.window.rootViewController;
+       [navigationController pushViewController: ovc animated:true];
+    }
+    NSLog(@"%@",idetifier);
+    return YES;
+}
+```
 
 同时Spotlight还提供删除索引方法,过期的索引需要手动删除,系统提供了三个删除索引方法
 
-<script src="https://gist.github.com/bindx/8ed24e847de7c7abe61c01692cb0e31b.js"></script>
 
-<script src="https://gist.github.com/bindx/bf1375a776804792fb38ecbda09df02a.js"></script>
+####通过identifier删除索引
+```objc
+- (IBAction)deleteSearchableItemFormIdentifier{
+   [[CSSearchableIndex defaultSearchableIndex] deleteSearchableItemsWithIdentifiers:@[@"1"] completionHandler:^(NSError * _Nullable error) {
+       if (error) {
+            NSLog(@"%@", error.localizedDescription);
+        }else{
+            [self performSelectorOnMainThread:@selector(showAlert:) withObject:@"通过identifier删除索引成功" waitUntilDone:NO];
+        }
+    }];
+}
+```
 
-<script src="https://gist.github.com/bindx/f73de633b23e5ff7c623a383edb669e6.js"></script>
+####通过DomainIdentifiers删除索引
+```objc
+- (IBAction)deleteSearchableItemFormDomain{
+    [[CSSearchableIndex defaultSearchableIndex] deleteSearchableItemsWithDomainIdentifiers:@[@"linkedme.cc"] completionHandler:^(NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"%@", error.localizedDescription);
+        }else{
+            [self performSelectorOnMainThread:@selector(showAlert:) withObject:@"通过DomainIdentifiers删除索引成功" waitUntilDone:NO];
+        }
+    }];
+}
+```
+####删除所有索引
 
-<script src="https://gist.github.com/bindx/80e6750b060d62e1021b31156ce7fb88.js"></script>
+```objc
+- (IBAction)deleteAllSearchableItem{
+    [[CSSearchableIndex defaultSearchableIndex] deleteAllSearchableItemsWithCompletionHandler:^(NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"%@",error.localizedDescription);
+        }else{
+            [self performSelectorOnMainThread:@selector(showAlert:) withObject:@"删除所有索引成功" waitUntilDone:NO];
+        }
+    }];
+}
+```
 
 [下载Demo](https://github.com/bindx/Spotlight-Demo)
 
