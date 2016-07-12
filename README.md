@@ -164,4 +164,5 @@ attributeSet|一组详细数据,指定数据源要显示搜索结果.
 ```
 
 [下载Demo](https://github.com/bindx/Spotlight-Demo)
+[参考连接LinkedME](https://github.com/WFC-LinkedME/LinkedME-iOS-Deep-Linking-Demo)
 
