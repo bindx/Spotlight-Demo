@@ -1,4 +1,4 @@
-#Core Spotlight和深度链接结合使用
+#Core Spotlight和深度链接结合使用(上)
 
 
 
@@ -95,7 +95,7 @@ CSSearchableItemAttributeSet设置Spotlight搜索内容的类,我们可以设置
 
 参数详解
 
-First Header | Second Header
+参数 | 说明
 ------------ | -------------
 uniqueIdentifier | 可以理解为标识符，后面可以用于判断用户点击 Spotlight 的搜索结果，判断用户是通过那个关键字唤起App的。
 domainIdentifier| 是确定这个索引数据是属于哪个“范围”的，这个范围可以用来区别不同 app 的索引数据，也可以用于区别同一个app里面不同模块的索引数据。
